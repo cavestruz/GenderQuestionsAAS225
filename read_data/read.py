@@ -115,10 +115,22 @@ class GenderSurveyQuestions :
         
         return {'M': self.get_number('M'), 'F': self.get_number('F')}
 
+    def _intersect_lists( self, a, b ) :
+        '''Finds intersectionof two lists a and b'''
+        return list(set(a) & set(b))
+
+    def get_number_overlap( self, key1, key2 ) :
+        '''Gets the number of people in some overlap of answers
+        (e.g. males who never asked questions)'''
+
+        overlap = self._intersect_lists(self.indices[key1][0], self.indices[key2][0])
+        return len(overlap)
+
 if __name__ == "__main__" : 
     ''' Test the class '''
     GSQ = GenderSurveyQuestions(csvfilename)
     print GSQ.gender_split()
     print GSQ.get_number_options()
-    print GSQ.get_number('never asked')
-    print GSQ.get_number('have asked')
+    print "Never asked", GSQ.get_number('never asked')
+    print "Asked", GSQ.get_number('have asked')
+    print "Males who never asked", GSQ.get_number_overlap('M','never asked')
