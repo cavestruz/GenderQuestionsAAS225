@@ -13,6 +13,11 @@ class GenderSurveyQuestions :
         self.fields = ['time_stamp','status', 'gender', 'have_asked', 'hesitated',
                   'why_not', 'why_do', 'recommendations', 'free_response']
         self.indices = {}
+        self.shortwhys = ['unimportant', 'repeat', 'unnoticed', 'far seat',
+        'nervous', 'stupid question', 'questions unimportant',
+        'nothing worthwhile', 'tweeting']
+        
+
         self._read_csv( gendercsv ) 
         self._responses_in_nparrays()
         self._get_ind()
@@ -40,6 +45,11 @@ class GenderSurveyQuestions :
         self.indices['hesitated'] = np.where(self.responses_dict['hesitated'] == 'Y')
         self.indices['never hesitated'] = np.where(self.responses_dict['hesitated'] == 'N')
 
+        # Reasons for not asking
+        for sw in self.shortwhys : 
+            self.indices[sw] = np.where(self.responses_dict[sw] == 'Y')
+
+
     def _responses_in_nparrays(self) : 
         '''Turns all of the values in the self.responses_dict from a
         list to a numpy array.'''
@@ -52,6 +62,8 @@ class GenderSurveyQuestions :
         with each response as a key, and values are numpy files'''
 
         self.responses_dict = { field: [] for field in self.fields}
+        self.responses_dict.update({ field : [] for field in
+                                    self.shortwhys })
 
         with open(csvfilename) as csvfile:
             # responses is an iterable that iterates over each
@@ -69,6 +81,7 @@ class GenderSurveyQuestions :
         self._normalize_status(entry) 
         self._normalize_asked_qq(entry)
         self._normalize_wanted_qq(entry)
+        self._normalize_why_not(entry)
 
     def _normalize_gender( self, entry ) :
         '''Check gender, normalize, append'''
@@ -97,6 +110,23 @@ class GenderSurveyQuestions :
         ''' Change to Y or N '''
         self.responses_dict['hesitated'].append(entry['hesitated'][0])
 
+    def _normalize_why_not( self, entry ) :
+        '''The why not entry may have multiple ones'''
+        searchwhys = ['important enough', 'already', 'noticed', 'far',
+                     'nervous', 'stupid', 'questions is important', 'worthwhile',
+                     'tweeting'] 
+        
+        ### Create this into why/whynot dict with Y and N... ###
+        # self.shortwhys
+        for whynot in entry['why_not'].split(',') : 
+            print "Why not: ", whynot
+            # Check if each entry has one of these answers
+            for sw in searchwhys : 
+                swindex = searchwhys.index(sw)
+                if sw in whynot : 
+                    self.responses_dict[self.shortwhys[swindex]].append('Y')
+                else : 
+                    self.responses_dict[self.shortwhys[swindex]].append('N')
 
     def get_number_options( self ) :
         '''Finds keys that one can find the number of people who
@@ -134,3 +164,18 @@ if __name__ == "__main__" :
     print "Never asked", GSQ.get_number('never asked')
     print "Asked", GSQ.get_number('have asked')
     print "Males who never asked", GSQ.get_number_overlap('M','never asked')
+    print "Males who asked", GSQ.get_number_overlap('M','have asked')
+    print "Females who never asked", GSQ.get_number_overlap('F','never asked')
+    print "Females who asked", GSQ.get_number_overlap('F','have asked')
+    print "\nReasons: "
+    for sw in GSQ.shortwhys : 
+        print sw, ': ', GSQ.get_number(sw)
+
+    print "\n Reasons women: "
+    for sw in GSQ.shortwhys : 
+        print sw, ': ', GSQ.get_number_overlap('F', sw)
+
+    print "\n Reasons men: "
+    for sw in GSQ.shortwhys : 
+        print sw, ': ', GSQ.get_number_overlap('M', sw)
+    
